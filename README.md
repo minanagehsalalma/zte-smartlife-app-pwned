@@ -13,6 +13,8 @@ The most significant result was a password-reset path that accepted a new passwo
 
 The research was coordinated with ZTE PSIRT. ZTE patched the affected paths and assigned four CVEs.
 
+The affected Android app had **100K+ Google Play downloads** at the time of publication; Apple does not publish an equivalent install count.
+
 ## CVEs
 
 | CVE | Finding | ZTE score |
