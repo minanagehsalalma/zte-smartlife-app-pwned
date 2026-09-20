@@ -186,6 +186,10 @@
       margin-top: 6px;
     }
 
+    .resource-links .repo-short {
+      display: none;
+    }
+
     .notice {
       margin: 28px 0 0;
       padding: 14px 16px;
@@ -656,6 +660,14 @@
         line-height: 1.45;
       }
 
+      .resource-links .repo-full {
+        display: none;
+      }
+
+      .resource-links .repo-short {
+        display: inline;
+      }
+
       .pull {
         margin: 22px 0;
         padding-left: 16px;
@@ -758,8 +770,8 @@
       </div>
       <div class="small resource-links">
         <span class="resource-label">Repo and PoC notes</span>
-        <a href="https://github.com/minanagehsalalma/zte-smartlife-app-pwned" target="_blank" rel="noopener noreferrer">https://github.com/minanagehsalalma/zte-smartlife-app-pwned</a>
-        <a href="https://github.com/minanagehsalalma/zte-h188a-h288a-firmware-research" target="_blank" rel="noopener noreferrer">https://github.com/minanagehsalalma/zte-h188a-h288a-firmware-research</a>
+        <a href="https://github.com/minanagehsalalma/zte-smartlife-app-pwned" target="_blank" rel="noopener noreferrer"><span class="repo-full">https://github.com/minanagehsalalma/zte-smartlife-app-pwned</span><span class="repo-short">SmartLife takeover write-up and PoCs</span></a>
+        <a href="https://github.com/minanagehsalalma/zte-h188a-h288a-firmware-research" target="_blank" rel="noopener noreferrer"><span class="repo-full">https://github.com/minanagehsalalma/zte-h188a-h288a-firmware-research</span><span class="repo-short">H188A/H288A firmware research</span></a>
       </div>
       <p class="pull">
         TL;DR: the SmartLife account reset path accepted <strong>a new password without requiring any reset code at all</strong>, which turned app-level access plus a target account identifier into account takeover.
