@@ -155,6 +155,37 @@
       font-size: 15px;
     }
 
+    .brand-row > div {
+      min-width: 0;
+    }
+
+    .resource-links {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .resource-links .resource-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .resource-links a {
+      display: block;
+      width: fit-content;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .resource-links a + a {
+      margin-top: 6px;
+    }
+
     .notice {
       margin: 28px 0 0;
       padding: 14px 16px;
@@ -615,6 +646,14 @@
       .brand-row img {
         width: 46px;
         height: 46px;
+        flex: 0 0 46px;
+      }
+
+      .resource-links {
+        margin-top: 12px;
+        padding: 11px 12px;
+        font-size: 13px;
+        line-height: 1.45;
       }
 
       .pull {
@@ -717,12 +756,11 @@
           Public mobile client used to validate the SmartLife account backend behavior.
         </div>
       </div>
-      <p class="small">
-        Repo and PoC notes:
+      <div class="small resource-links">
+        <span class="resource-label">Repo and PoC notes</span>
         <a href="https://github.com/minanagehsalalma/zte-smartlife-app-pwned" target="_blank" rel="noopener noreferrer">https://github.com/minanagehsalalma/zte-smartlife-app-pwned</a>
-        &middot;
         <a href="https://github.com/minanagehsalalma/zte-h188a-h288a-firmware-research" target="_blank" rel="noopener noreferrer">https://github.com/minanagehsalalma/zte-h188a-h288a-firmware-research</a>
-      </p>
+      </div>
       <p class="pull">
         TL;DR: the SmartLife account reset path accepted <strong>a new password without requiring any reset code at all</strong>, which turned app-level access plus a target account identifier into account takeover.
       </p>
