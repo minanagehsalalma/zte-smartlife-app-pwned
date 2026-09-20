@@ -1,4 +1,4 @@
-# ZTE SmartLife Security Findings
+# ZTE SmartLife Security Findings Leading to Account Takeover
 
 Technical write-up and supporting material for a ZTE SmartLife account-backend investigation.
 
