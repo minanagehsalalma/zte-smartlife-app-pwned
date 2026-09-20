@@ -1,0 +1,12 @@
+title: ZTE SmartLife security findings
+description: Technical writeup on ZTE SmartLife security findings covering app-auth recovery, account enumeration, password reset behavior, signup abuse, and Homecare SDK reach.
+name: ZTE SmartLife security findings
+markdown: kramdown
+kramdown:
+  input: GFM
+exclude:
+  - README.md
+  - .gitignore
+include:
+  - writeup-assets
+  - pocs

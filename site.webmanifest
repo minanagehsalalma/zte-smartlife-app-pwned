@@ -1,0 +1,15 @@
+{
+  "name": "ZTE SmartLife security findings",
+  "short_name": "SmartLife research",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7f3ea",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "writeup-assets/smartlife-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

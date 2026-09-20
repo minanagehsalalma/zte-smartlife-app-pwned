@@ -1,0 +1,16 @@
+# Local editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+
+# Archive outputs
+*.zip
+*.7z
+
+# Temporary notes
+*.tmp
+*.bak

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6f3ea"/>
+      <stop offset="0.55" stop-color="#f2f6f1"/>
+      <stop offset="1" stop-color="#eef5f8"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="247" y1="129" x2="1326" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f7faf9"/>
+    </linearGradient>
+    <filter id="shadow" x="202" y="92" width="1196" height="706" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#93a19d" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1320" cy="146" r="132" fill="#dbece8"/>
+  <circle cx="1380" cy="780" r="162" fill="#dfeaf2"/>
+  <circle cx="182" cy="754" r="122" fill="#eee4d1"/>
+  <g filter="url(#shadow)">
+    <rect x="250" y="140" width="1100" height="610" rx="28" fill="url(#panel)"/>
+    <rect x="250.75" y="140.75" width="1098.5" height="608.5" rx="27.25" stroke="#d8e1de" stroke-width="1.5"/>
+  </g>
+  <rect x="304" y="194" width="188" height="34" rx="17" fill="#dceee8"/>
+  <text x="329" y="217" fill="#1d5e55" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="1.8">CLOUD ACCOUNT RESEARCH</text>
+  <text x="304" y="308" fill="#14201c" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="700">
+    <tspan x="304" dy="0">ZTE SmartLife</tspan>
+    <tspan x="304" dy="84">account-surface</tspan>
+    <tspan x="304" dy="84">research</tspan>
+  </text>
+  <text x="306" y="580" fill="#4d5b56" font-family="Segoe UI, Arial, sans-serif" font-size="28">
+    <tspan x="306" dy="0">From router ecosystem analysis to cloud identity impact:</tspan>
+    <tspan x="306" dy="42">app-auth recovery, account enumeration, reset behavior,</tspan>
+    <tspan x="306" dy="42">signup abuse, and the Homecare SDK surface behind login.</tspan>
+  </text>
+  <rect x="952" y="234" width="298" height="112" rx="22" fill="#f5faf8"/>
+  <rect x="952.75" y="234.75" width="296.5" height="110.5" rx="21.25" stroke="#d8e3df" stroke-width="1.5"/>
+  <text x="984" y="272" fill="#6a7772" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="1.2">VALIDATED ACCOUNT ISSUES</text>
+  <text x="984" y="322" fill="#15312b" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="700">5</text>
+  <rect x="952" y="380" width="298" height="112" rx="22" fill="#fbf7ef"/>
+  <rect x="952.75" y="380.75" width="296.5" height="110.5" rx="21.25" stroke="#e7ddd0" stroke-width="1.5"/>
+  <text x="984" y="418" fill="#7b6d5b" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="1.2">POC METHODS</text>
+  <text x="984" y="468" fill="#45392b" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="700">Direct replay + Frida</text>
+  <rect x="952" y="526" width="298" height="112" rx="22" fill="#f3f7fb"/>
+  <rect x="952.75" y="526.75" width="296.5" height="110.5" rx="21.25" stroke="#d6e0ea" stroke-width="1.5"/>
+  <text x="984" y="564" fill="#596877" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="1.2">ARTIFACTS</text>
+  <text x="984" y="614" fill="#20364d" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="700">Writeup + methodology</text>
+  <rect x="304" y="689" width="220" height="12" rx="6" fill="#d8e6e1"/>
+  <rect x="534" y="689" width="180" height="12" rx="6" fill="#eadfce"/>
+  <rect x="724" y="689" width="156" height="12" rx="6" fill="#d7e3ee"/>
+</svg>
